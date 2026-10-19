@@ -1201,9 +1201,16 @@ function classementEncounterHTML(encounter){
   }).join('')+(result?'<div class="classement-card-result'+(encounter.invalid?' alert':winner?' won':'')+'">'+esc(result)+'</div>':'')+'</article>';
 }
 function classementTeamsReady(){
-  var rows=DATA.general||[];
-  /* Attendre aussi les équipes encore absentes du classement, faute de score. */
-  return rows.length>=CODE_LIST.length&&rows.every(function(row){return Number(row.played)>=22})&&CODE_LIST.every(function(code){
+  var rows=(DATA.general||[]).filter(function(row){return normalizeTeamKey(fullName(row.code))!=='EXEMPT'}),expected=[];
+  /* Attendre les équipes réellement prévues dans les tours, hors exemption. */
+  Object.keys(DATA.partiesByTour||{}).forEach(function(tour){
+    (DATA.partiesByTour[tour]||[]).forEach(function(match){
+      [match.equipe1,match.equipe2].forEach(function(code){
+        if(code&&normalizeTeamKey(fullName(code))!=='EXEMPT'&&!expected.some(function(team){return sameTeam(team,code)}))expected.push(code);
+      });
+    });
+  });
+  return rows.length>=4&&rows.every(function(row){return Number(row.played)>=22})&&expected.every(function(code){
     return rows.some(function(row){return sameTeam(row.code,code)&&Number(row.played)>=22});
   });
 }
